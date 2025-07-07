@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -5,13 +7,17 @@
 }
 
 body {
-  font-family: 'Quicksand', 'Arial', sans-serif;
+  font-family: 'Baloo 2', 'Quicksand', Arial, sans-serif;
   background: #fff;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, button, .choose-mode-btn, .start-button, .try-again-button {
+  font-family: 'Baloo 2', 'Quicksand', Arial, sans-serif !important;
 }
 
 .app {
@@ -236,9 +242,18 @@ body {
     gap: 1rem !important;
   }
   .choose-mode-btn {
-    width: 160px !important;
-    height: 160px !important;
-    font-size: 1.5rem !important;
+    width: 165px !important;
+    height: 165px !important;
+    font-size: 1.25rem !important;
+    padding: 0.8rem !important;
+  }
+  .choose-mode-btn img {
+    width: 95px !important;
+    height: 95px !important;
+    margin-bottom: 14px !important;
+  }
+  .choose-mode-btn span {
+    font-size: 1.25rem !important;
   }
 }
 
@@ -283,4 +298,49 @@ body {
     height: 300px;
     font-size: 2.4rem;
   }
+  .choose-mode-btn img {
+    width: 160px !important;
+    height: 160px !important;
+  }
+}
+
+/* Add for spin wheel pointer and bounce */
+.spin-pointer {
+  position: absolute;
+  left: 50%;
+  top: -30px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.spin-wheel {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(67, 198, 172, 0.10);
+  transition: transform 2s cubic-bezier(.25,1.7,.5,1);
+}
+
+.spin-wheel.bounce {
+  animation: wheel-bounce 0.4s;
+}
+
+@keyframes wheel-bounce {
+  0% { transform: scale(1) rotate(var(--final-rotation, 0deg)); }
+  60% { transform: scale(1.08) rotate(var(--final-rotation, 0deg)); }
+  100% { transform: scale(1) rotate(var(--final-rotation, 0deg)); }
+}
+
+.choose-mode-btn img {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 16px;
+}
+
+.choose-mode-btn.math-btn {
+  box-shadow: 0 8px 32px 0 rgba(67, 198, 250, 0.35);
+}
+.choose-mode-btn.english-btn {
+  box-shadow: 0 8px 32px 0 rgba(252, 198, 100, 0.35);
 } 

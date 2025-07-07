@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import MathIcon from './assets/icons/math.png';
+import EnglishIcon from './assets/icons/english.png';
+import failSound from './assets/sound-effects/fail.mp3';
+import winSound from './assets/sound-effects/win.mp3';
 
 const BombMascot = () => (
   <div style={{ fontSize: '5rem', margin: '1.5rem 0' }} role="img" aria-label="bomb">
@@ -99,7 +103,6 @@ const SAT_PROBLEMS: Problem[] = [
 ];
 
 function App() {
-  // Check localStorage on initial load
   const [gameState, setGameState] = useState(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('satifySolved') === 'true') {
       return 'chooseMode';
@@ -110,8 +113,12 @@ function App() {
   const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [wheelRotation, setWheelRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<null | 'Math' | 'English'>(null);
+  const [animating, setAnimating] = useState(false);
+  const failAudioRef = useRef<HTMLAudioElement | null>(null);
+  const winAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Logo splash effect
   useEffect(() => {
@@ -147,27 +154,56 @@ function App() {
     setSelectedAnswer(null);
     setShowResult(false);
     setGameState('challenge');
+    // Play fail sound
+    if (failAudioRef.current) {
+      failAudioRef.current.currentTime = 0;
+      failAudioRef.current.volume = 1.0;
+      failAudioRef.current.play();
+    }
+    // Stop win sound if playing
+    if (winAudioRef.current) {
+      winAudioRef.current.pause();
+      winAudioRef.current.currentTime = 0;
+    }
   };
 
   const handleAnswerSelect = (answerIndex: number) => {
-    if (selectedAnswer !== null) return; // Prevent multiple selections
-    
+    if (selectedAnswer !== null) return;
     setSelectedAnswer(answerIndex);
     setShowResult(true);
-    
     setTimeout(() => {
       if (answerIndex === currentProblem!.correctAnswer) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('satifySolved', 'true');
         }
+        // Stop fail sound and play win sound
+        if (failAudioRef.current) {
+          failAudioRef.current.pause();
+          failAudioRef.current.currentTime = 0;
+        }
+        if (winAudioRef.current) {
+          winAudioRef.current.currentTime = 0;
+          winAudioRef.current.volume = 1.0;
+          winAudioRef.current.play();
+        }
         setGameState('chooseMode');
       } else {
+        // Stop fail sound
+        if (failAudioRef.current) {
+          failAudioRef.current.pause();
+          failAudioRef.current.currentTime = 0;
+        }
         setGameState('gameOver');
       }
     }, 1200);
   };
 
   const handleTryAgain = () => {
+    // Stop fail sound
+    if (failAudioRef.current) {
+      failAudioRef.current.pause();
+      failAudioRef.current.currentTime = 0;
+    }
     setGameState('start');
   };
 
@@ -261,11 +297,30 @@ function App() {
                       ? 'incorrect'
                       : ''
                     : ''
-                }`}
+                } challenge-choice-btn`}
+                style={{
+                  background: '#fff',
+                  border: '2px solid #bbb',
+                  color: '#222',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontWeight: 600,
+                  fontSize: '1.1rem',
+                  boxShadow: 'none',
+                  marginBottom: 8,
+                  marginTop: 0,
+                  marginLeft: 0,
+                  marginRight: 0,
+                  borderRadius: 14,
+                  padding: '1.2rem 0.5rem',
+                  cursor: selectedAnswer !== null ? 'default' : 'pointer',
+                  transition: 'all 0.2s cubic-bezier(.4,2,.6,1)'
+                }}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={selectedAnswer !== null}
               >
-                {String.fromCharCode(97 + index)} {choice}
+                <span style={{ color: '#bbb', fontWeight: 700, fontSize: '1.1rem', marginRight: 12 }}>{String.fromCharCode(65 + index)}</span>
+                <span style={{ color: '#222', fontWeight: 600 }}>{choice}</span>
               </button>
             ))}
           </div>
@@ -325,19 +380,21 @@ function App() {
         <h2 className="choose-subject-title" style={{ color: '#2d3a3a', marginBottom: '2rem', fontWeight: 800, fontSize: '2rem' }}>What do you want to practice today?</h2>
         <div className="button-container" style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
-            className="choose-mode-btn"
-            style={{ background: 'linear-gradient(135deg, #81ecec 0%, #0984e3 100%)' }}
+            className="choose-mode-btn math-btn"
+            style={{ background: 'linear-gradient(135deg, #81ecec 0%, #0984e3 100%)', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', display: 'flex' }}
             onClick={() => alert('Math mode coming soon!')}
           >
-            Math
+            <img src={MathIcon} alt="Math" style={{ width: 120, height: 120, marginBottom: 16 }} />
+            <span style={{ fontWeight: 700, fontSize: '2rem', color: 'white', marginTop: 4 }}>Math</span>
           </button>
           <div style={{ color: '#636e72', fontWeight: 600, fontSize: '1.2rem' }}>or</div>
           <button
-            className="choose-mode-btn"
-            style={{ background: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', color: '#2d3a3a' }}
+            className="choose-mode-btn english-btn"
+            style={{ background: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', color: '#2d3a3a', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', display: 'flex' }}
             onClick={() => alert('English mode coming soon!')}
           >
-            English
+            <img src={EnglishIcon} alt="English" style={{ width: 120, height: 120, marginBottom: 16 }} />
+            <span style={{ fontWeight: 700, fontSize: '2rem', color: 'white', marginTop: 4 }}>English</span>
           </button>
         </div>
         <div style={{ marginTop: '1rem', fontWeight: 600, color: '#636e72', fontSize: '1.1rem', cursor: 'pointer', textDecoration: 'underline' }}
@@ -351,20 +408,63 @@ function App() {
 
   if (gameState === 'spinWheel') {
     const handleSpin = () => {
+      if (spinning) return;
       setSpinning(true);
+      setResult(null);
+      setAnimating(false);
+      setWheelRotation(0);
       setTimeout(() => {
         const isMath = Math.random() < 0.5;
-        setResult(isMath ? 'Math' : 'English');
-        setSpinning(false);
-      }, 1800);
+        const baseAngle = isMath ? 90 : 270;
+        const extraSpins = 12 + Math.floor(Math.random() * 5); // 12-16 full spins
+        // Add a random offset so the pointer never lands in exactly the same spot
+        const randomOffset = (Math.random() - 0.5) * 30; // -15 to +15 degrees
+        const finalRotation = 360 * extraSpins + baseAngle + randomOffset;
+        setAnimating(true);
+        setWheelRotation(finalRotation);
+        setTimeout(() => {
+          setResult(isMath ? 'English' : 'Math');
+          setSpinning(false);
+          setAnimating(false);
+        }, 5500);
+      }, 50);
     };
 
     return (
       <div className="app" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <h2 style={{ color: '#2d3a3a', marginBottom: '2rem', fontWeight: 800, fontSize: '2rem' }}>Spin the Wheel!</h2>
-        <div style={{ width: 300, height: 300, borderRadius: '50%', background: 'conic-gradient(#81ecec 0% 50%, #ffeaa7 50% 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', boxShadow: '0 8px 32px rgba(67, 198, 172, 0.10)' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#2d3a3a', textAlign: 'center' }}>
-            {spinning ? 'Spinning...' : result ? result : 'Math or English?'}
+        <div style={{ position: 'relative', width: 300, height: 320, marginBottom: '2rem' }}>
+          {/* Pointer - flipped to point downward and overlap the wheel edge */}
+          <div style={{ position: 'absolute', left: '50%', top: 8, transform: 'translateX(-50%)', zIndex: 3 }}>
+            <svg width="36" height="28" viewBox="0 0 36 28">
+              <polygon points="0,0 36,0 18,28" fill="#636e72" />
+            </svg>
+          </div>
+          {/* Wheel */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 20,
+            width: 300,
+            height: 300,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            boxShadow: '0 12px 40px rgba(67, 198, 172, 0.18)',
+            border: '6px solid #fff',
+            background: '#fff',
+            transition: animating ? 'transform 5.5s cubic-bezier(0.12, 0.85, 0.38, 1.08)' : 'none',
+            transform: `rotate(${wheelRotation}deg)`
+          }}>
+            <svg width="300" height="300" viewBox="0 0 300 300">
+              {/* Right half - Math (right side, 180deg) */}
+              <path d="M150,150 L150,0 A150,150 0 1,1 150,300 Z" fill="#81ecec" />
+              {/* Left half - English (left side, 180deg) */}
+              <path d="M150,150 L150,300 A150,150 0 1,1 150,0 Z" fill="#ffeaa7" />
+              {/* Math label (right, horizontal, centered) */}
+              <text x="240" y="155" textAnchor="middle" fontSize="2rem" fontWeight="bold" fill="#00b894" dominantBaseline="middle">Math</text>
+              {/* English label (left, horizontal, centered) */}
+              <text x="60" y="155" textAnchor="middle" fontSize="2rem" fontWeight="bold" fill="#0984e3" dominantBaseline="middle">English</text>
+            </svg>
           </div>
         </div>
         <button
@@ -380,6 +480,7 @@ function App() {
             cursor: spinning ? 'not-allowed' : 'pointer',
             opacity: spinning ? 0.7 : 1,
             marginBottom: '1.5rem',
+            transition: 'all 0.2s cubic-bezier(.4,2,.6,1)'
           }}
           onClick={handleSpin}
           disabled={spinning}
@@ -427,7 +528,13 @@ function App() {
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* ...existing app rendering... */}
+      <audio ref={failAudioRef} src={failSound} preload="auto" />
+      <audio ref={winAudioRef} src={winSound} preload="auto" />
+    </>
+  );
 }
 
 export default App; 
