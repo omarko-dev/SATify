@@ -242,19 +242,37 @@ h1, h2, h3, h4, h5, h6, button, .choose-mode-btn, .start-button, .try-again-butt
     gap: 1rem !important;
   }
   .choose-mode-btn {
-    width: 165px !important;
-    height: 165px !important;
-    font-size: 1.25rem !important;
-    padding: 0.8rem !important;
+    width: 135px !important;
+    height: 135px !important;
+    font-size: 1.1rem !important;
+    padding: 1.2rem 0.5rem 1rem 0.5rem !important;
   }
   .choose-mode-btn img {
-    width: 95px !important;
-    height: 95px !important;
-    margin-bottom: 14px !important;
+    width: 60px !important;
+    height: 60px !important;
+    margin-bottom: 10px !important;
   }
   .choose-mode-btn span {
-    font-size: 1.25rem !important;
+    font-size: 1.05rem !important;
   }
+  .button-container {
+    gap: 0.7rem !important;
+    margin-top: 1.2rem !important;
+    margin-bottom: 1.2rem !important;
+  }
+  .button-container > div {
+    font-size: 1.1rem !important;
+    margin: 0 0.2rem !important;
+  }
+}
+
+.button-container {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.5rem;
 }
 
 .choose-mode-btn {
@@ -269,11 +287,14 @@ h1, h2, h3, h4, h5, h6, button, .choose-mode-btn, .start-button, .try-again-butt
   cursor: pointer;
   transition: all 0.3s cubic-bezier(.4,2,.6,1);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
   animation: slideInUp 0.6s ease-out;
+  background: white;
+  position: relative;
 }
 
 .choose-mode-btn:hover {
@@ -292,16 +313,37 @@ h1, h2, h3, h4, h5, h6, button, .choose-mode-btn, .start-button, .try-again-butt
   }
 }
 
-@media (min-width: 700px) {
-  .choose-mode-btn {
-    width: 300px;
-    height: 300px;
-    font-size: 2.4rem;
-  }
-  .choose-mode-btn img {
-    width: 160px !important;
-    height: 160px !important;
-  }
+.choose-mode-btn img {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 18px;
+  display: block;
+}
+
+.choose-mode-btn span {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 0;
+  color: inherit;
+}
+
+.choose-mode-btn.math-btn {
+  box-shadow: 0 8px 32px 0 rgba(67, 198, 250, 0.18);
+  background: linear-gradient(135deg, #e0f7fa 0%, #81ecec 100%);
+  color: #0984e3;
+}
+.choose-mode-btn.english-btn {
+  box-shadow: 0 8px 32px 0 rgba(252, 198, 100, 0.18);
+  background: linear-gradient(135deg, #fffde4 0%, #ffeaa7 100%);
+  color: #e17055;
+}
+
+.button-container > div {
+  font-size: 1.5rem;
+  color: #636e72;
+  font-weight: 700;
+  margin: 0 0.5rem;
+  align-self: center;
 }
 
 /* Add for spin wheel pointer and bounce */
@@ -332,15 +374,27 @@ h1, h2, h3, h4, h5, h6, button, .choose-mode-btn, .start-button, .try-again-butt
   100% { transform: scale(1) rotate(var(--final-rotation, 0deg)); }
 }
 
-.choose-mode-btn img {
-  width: 120px;
-  height: 120px;
-  margin-bottom: 16px;
+@media (min-width: 700px) {
+  .choose-mode-btn {
+    width: 300px;
+    height: 300px;
+    font-size: 2.4rem;
+  }
+  .choose-mode-btn img {
+    width: 160px !important;
+    height: 160px !important;
+  }
+} 
+
+.screen-transition {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInScreen 0.5s cubic-bezier(.4,2,.6,1) forwards;
 }
 
-.choose-mode-btn.math-btn {
-  box-shadow: 0 8px 32px 0 rgba(67, 198, 250, 0.35);
-}
-.choose-mode-btn.english-btn {
-  box-shadow: 0 8px 32px 0 rgba(252, 198, 100, 0.35);
+@keyframes fadeInScreen {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 } 
