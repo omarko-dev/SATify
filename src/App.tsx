@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import MathIcon from './assets/icons/math.png';
 import EnglishIcon from './assets/icons/english.png';
 import failSound from './assets/sound-effects/fail.mp3';
@@ -41,7 +42,7 @@ const RotatedTitle = () => (
   </div>
 );
 
-type GameState = 'logo' | 'start' | 'challenge' | 'gameOver' | 'chooseMode' | 'chooseSubject' | 'spinWheel' | 'welcome' | 'mathLevels';
+type GameState = 'logo' | 'start' | 'challenge' | 'gameOver' | 'chooseMode' | 'chooseSubject' | 'spinWheel' | 'welcome' | 'mathLevels' | 'mathLevel1';
 
 interface Problem {
   question: string;
@@ -102,8 +103,69 @@ const SAT_PROBLEMS: Problem[] = [
   }
 ];
 
-function App() {
+function LoadingScreen({ message = 'Loading...' }) {
+  return (
+    <div className="screen-transition" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div style={{ fontSize: '2.2rem', color: '#23a9fa', fontWeight: 800, marginBottom: 24 }}>{message}</div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <div className="dot" style={{ width: 18, height: 18, borderRadius: '50%', background: '#23a9fa', animation: 'bounce 1s infinite alternate', animationDelay: '0s' }} />
+        <div className="dot" style={{ width: 18, height: 18, borderRadius: '50%', background: '#23a9fa', animation: 'bounce 1s infinite alternate', animationDelay: '0.2s' }} />
+        <div className="dot" style={{ width: 18, height: 18, borderRadius: '50%', background: '#23a9fa', animation: 'bounce 1s infinite alternate', animationDelay: '0.4s' }} />
+      </div>
+      <style>{`
+        @keyframes bounce {
+          0% { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(-18px); opacity: 0.7; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function MathLevel1() {
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+  if (loading) return <LoadingScreen message="Loading Level 1..." />;
+  return (
+    <div className="screen-transition" key="mathLevel1">
+      <div className="app" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <h2 style={{ color: '#23a9fa', fontWeight: 800, fontSize: '2.2rem', marginBottom: 24 }}>Math Level 1</h2>
+        <div style={{ fontSize: '1.3rem', color: '#636e72', fontWeight: 600, marginBottom: 32 }}>Coming Soon!</div>
+        <BackToLevelsButton />
+      </div>
+    </div>
+  );
+}
+
+function BackToLevelsButton() {
+  const navigate = useNavigate();
+  return (
+    <button
+      style={{
+        fontSize: '1.1rem',
+        padding: '0.7rem 2rem',
+        borderRadius: '20px',
+        fontWeight: 700,
+        color: '#2d3a3a',
+        background: '#fff',
+        border: '2px solid #23a9fa',
+        marginTop: '0.5rem',
+        cursor: 'pointer',
+      }}
+      onClick={() => navigate('/math-levels')}
+    >
+      Back to Levels
+    </button>
+  );
+}
+
+function MainApp({ initialGameState }: { initialGameState?: string }) {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState(() => {
+    if (initialGameState) return initialGameState;
     if (typeof window !== 'undefined' && localStorage.getItem('satifySolved') === 'true') {
       return 'chooseMode';
     }
@@ -577,11 +639,11 @@ function App() {
     const levelCompletion = [true, false, false, false, false, false];
     const levels = [1, 2, 3, 4, 5, 6];
     // Path positions: smooth, centered zig-zag
-    const pathWidth = isMobile ? 340 : 420;
-    const pathHeight = isMobile ? 520 : 600;
+    const pathWidth = isMobile ? 340 : 540;
+    const pathHeight = isMobile ? 520 : 720;
     const center = pathWidth / 2 - circleSize / 2;
-    const offset = isMobile ? 60 : 80;
-    const step = isMobile ? 80 : 100;
+    const offset = isMobile ? 60 : 140;
+    const step = isMobile ? 80 : 120;
     const positions = [
       { left: center, top: 0 },
       { left: center + offset, top: step },
@@ -590,9 +652,50 @@ function App() {
       { left: center - offset, top: step * 4 },
       { left: center, top: step * 5 },
     ];
+    const isDesktop = !isMobile;
     return (
       <div className="screen-transition" key="mathLevels">
-        <div className="app" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', paddingTop: isMobile ? 24 : 48, width: '100vw', background: '#fff' }}>
+        <div
+          style={{
+            width: '100vw',
+            height: '100vh',
+            overflowY: isDesktop ? 'auto' : 'hidden',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            position: 'relative',
+            background: '#fff',
+            paddingTop: isMobile ? 24 : 32, // extra top padding on both mobile and desktop
+          }}
+        >
+          {/* Floating back button: circle in bottom left (both desktop and mobile) */}
+          <button
+            style={{
+              position: 'fixed',
+              bottom: 20,
+              left: 20,
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: '#f4f6fa',
+              border: 'none',
+              boxShadow: '0 2px 8px #b2bec344',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 20,
+              cursor: 'pointer',
+              transition: 'background 0.18s',
+            }}
+            onClick={() => setGameState('chooseSubject')}
+          >
+            <svg width="26" height="26" viewBox="0 0 22 22" fill="none">
+              <path d="M14 18L8 11L14 4" stroke="#1976d2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
           {/* Dropdown menu - now blue like Duolingo */}
           <div style={{
             background: '#23a9fa',
@@ -746,7 +849,16 @@ function App() {
                   onMouseLeave={() => completed && setPressedIdx(null)}
                   onTouchStart={() => completed && setPressedIdx(idx)}
                   onTouchEnd={() => completed && setPressedIdx(null)}
-                  onClick={() => { if (completed) { setSelectedLevel('level' + level); setPressedIdx(null); } }}
+                  onClick={() => {
+                    if (completed) {
+                      if (level === 1) {
+                        navigate('/math/level/1');
+                      } else {
+                        setSelectedLevel('level' + level);
+                      }
+                      setPressedIdx(null);
+                    }
+                  }}
                   disabled={!completed}
                 >
                   <svg width={circleSize} height={circleSize + 18} viewBox={`0 0 ${circleSize} ${circleSize + 18}`} style={{ display: 'block' }}>
@@ -897,11 +1009,6 @@ function App() {
               </div>
             </div>
           )}
-          <div style={{ marginTop: isMobile ? 18 : 32, color: '#636e72', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600, fontSize: isMobile ? '1rem' : '1.1rem' }}
-            onClick={() => setGameState('chooseSubject')}
-          >
-            Back
-          </div>
         </div>
       </div>
     );
@@ -916,4 +1023,15 @@ function App() {
   );
 }
 
-export default App; 
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/math-levels" element={<MainApp initialGameState="mathLevels" />} />
+        <Route path="/math/level/1" element={<MathLevel1 />} />
+        {/* Add more routes for other levels as needed */}
+      </Routes>
+    </BrowserRouter>
+  );
+} 
