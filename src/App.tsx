@@ -4,6 +4,7 @@ import MathIcon from './assets/icons/math.png';
 import EnglishIcon from './assets/icons/english.png';
 import failSound from './assets/sound-effects/fail.mp3';
 import winSound from './assets/sound-effects/win.mp3';
+import { questions, Question } from './questions';
 
 const BombMascot = () => (
   <div style={{ fontSize: '5rem', margin: '1.5rem 0' }} role="img" aria-label="bomb">
@@ -122,18 +123,121 @@ function LoadingScreen({ message = 'Loading...' }) {
   );
 }
 
+function ProgressBar({ current, total }: { current: number; total: number }) {
+  const percent = Math.round((current / total) * 100);
+  return (
+    <div style={{ width: '100%', margin: '0 auto', marginBottom: 24, maxWidth: 420 }}>
+      <div style={{ height: 16, background: '#e3f2fd', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px #23a9fa11' }}>
+        <div style={{ width: `${percent}%`, height: '100%', background: 'linear-gradient(90deg, #23a9fa 60%, #81ecec 100%)', borderRadius: 12, transition: 'width 0.3s cubic-bezier(.4,2,.6,1)' }} />
+      </div>
+      <div style={{ textAlign: 'center', marginTop: 4, color: '#1976d2', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>{current} / {total} Questions</div>
+    </div>
+  );
+}
+
+function QuestionCard({ question, choices, selected, onSelect }: {
+  question: string;
+  choices: string[];
+  selected: number | null;
+  onSelect: (idx: number) => void;
+}) {
+  return (
+    <div style={{
+      background: '#fff',
+      borderRadius: 24,
+      boxShadow: '0 4px 24px #23a9fa11',
+      padding: '2.2rem 1.5rem 2.5rem 1.5rem',
+      maxWidth: 420,
+      width: '100%',
+      margin: '0 auto',
+      marginBottom: 32,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }}>
+      <div style={{ fontWeight: 800, fontSize: '1.35rem', color: '#222', marginBottom: 24, textAlign: 'center' }}>{question}</div>
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {choices.map((choice, idx) => (
+          <button
+            key={idx}
+            style={{
+              width: '100%',
+              background: selected === idx ? 'linear-gradient(90deg, #23a9fa 60%, #81ecec 100%)' : '#fff',
+              color: selected === idx ? '#fff' : '#222',
+              border: selected === idx ? '2.5px solid #23a9fa' : '2.5px solid #e3f2fd',
+              borderRadius: 16,
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              padding: '1.1rem 1.5rem',
+              boxShadow: selected === idx ? '0 2px 12px #23a9fa22' : '0 2px 8px #23a9fa11',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              cursor: selected === null ? 'pointer' : 'default',
+              transition: 'all 0.18s cubic-bezier(.4,2,.6,1)',
+              outline: 'none',
+            }}
+            onClick={() => selected === null && onSelect(idx)}
+            disabled={selected !== null}
+          >
+            <span style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: selected === idx ? '2.5px solid #23a9fa' : '2.5px solid #e3f2fd',
+              background: '#fff',
+              color: '#1976d2',
+              fontWeight: 800,
+              fontSize: '1.1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+              boxShadow: '0 1px 4px #23a9fa11',
+            }}>{String.fromCharCode(65 + idx)}</span>
+            <span>{choice}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MathLevel1() {
   const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const levelQuestions = questions.filter(q => q.topic === 'algebra').slice(0, 10);
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
+    const timer = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
   if (loading) return <LoadingScreen message="Loading Level 1..." />;
+  const q = levelQuestions[current];
   return (
     <div className="screen-transition" key="mathLevel1">
-      <div className="app" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <h2 style={{ color: '#23a9fa', fontWeight: 800, fontSize: '2.2rem', marginBottom: 24 }}>Math Level 1</h2>
-        <div style={{ fontSize: '1.3rem', color: '#636e72', fontWeight: 600, marginBottom: 32 }}>Coming Soon!</div>
+      <div className="app" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', paddingTop: 32 }}>
+        <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
+        {current < levelQuestions.length ? (
+          <QuestionCard
+            question={q.question}
+            choices={q.choices}
+            selected={selected}
+            onSelect={idx => {
+              setSelected(idx);
+              setTimeout(() => {
+                if (idx === q.answer) setScore(s => s + 1);
+                setSelected(null);
+                setCurrent(c => c + 1);
+              }, 900);
+            }}
+          />
+        ) : (
+          <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
+            You scored {score} / {levelQuestions.length}!
+          </div>
+        )}
         <BackToLevelsButton />
       </div>
     </div>
