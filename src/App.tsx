@@ -125,22 +125,168 @@ function LoadingScreen({ message = 'Loading...' }) {
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   const percent = Math.round((current / total) * 100);
+  const navigate = useNavigate();
   return (
-    <div style={{ width: '100%', margin: '0 auto', marginBottom: 24, maxWidth: 420 }}>
-      <div style={{ height: 16, background: '#e3f2fd', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px #23a9fa11' }}>
-        <div style={{ width: `${percent}%`, height: '100%', background: 'linear-gradient(90deg, #23a9fa 60%, #81ecec 100%)', borderRadius: 12, transition: 'width 0.3s cubic-bezier(.4,2,.6,1)' }} />
+    <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, height: 60, margin: 0, padding: '0 18px', marginTop: 32 }}>
+      {/* Animated label above bar fill and bar row */}
+      <div style={{ width: '100%', position: 'relative', height: 60, display: 'flex', alignItems: 'center', overflow: 'visible' }}>
+        {/* X button */}
+        <button
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            background: '#fff',
+            border: '2.5px solid #23a9fa',
+            boxShadow: '0 2px 8px #23a9fa22',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 18,
+            cursor: 'pointer',
+            transition: 'background 0.18s',
+          }}
+          onClick={() => navigate('/math-levels')}
+          aria-label="Back to Levels"
+        >
+          <svg width="26" height="26" viewBox="0 0 22 22" fill="none">
+            <path d="M6 6L16 16M16 6L6 16" stroke="#23a9fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {/* Bar and animated label */}
+        <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', height: 26, overflow: 'visible' }}>
+          {/* Animated label above the bar fill, outside overflow: hidden */}
+          <div style={{
+            position: 'absolute',
+            bottom: 34,
+            left: `${percent}%`,
+            transform: 'translateX(-50%)',
+            minWidth: 40,
+            textAlign: 'center',
+            color: '#23a9fa',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            letterSpacing: 1,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            transition: 'left 0.3s cubic-bezier(.4,2,.6,1), transform 0.3s cubic-bezier(.4,2,.6,1)'
+          }}>
+            {current} / {total}
+          </div>
+          <div style={{ height: 26, background: '#e3f2fd', borderRadius: 32, overflow: 'hidden', width: '100%', position: 'relative' }}>
+            <div style={{ width: `${percent}%`, height: '100%', background: '#23a9fa', borderRadius: 32, transition: 'width 0.3s cubic-bezier(.4,2,.6,1)' }} />
+          </div>
+        </div>
       </div>
-      <div style={{ textAlign: 'center', marginTop: 4, color: '#1976d2', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>{current} / {total} Questions</div>
     </div>
   );
 }
 
-function QuestionCard({ question, choices, selected, onSelect }: {
+function FeedbackBanner({
+  correct,
+  correctAnswer,
+  show,
+  choices,
+}: {
+  correct: boolean;
+  correctAnswer?: number;
+  show: boolean;
+  choices: string[];
+}) {
+  // Duolingo-style: blue for correct, red for wrong
+  const bannerBg = correct ? '#e3f2fd' : '#ffeaea';
+  const bannerBorder = correct ? '#23a9fa' : '#ff5a5a';
+  const iconColor = correct ? '#23a9fa' : '#ff5a5a';
+  const textColor = correct ? '#1976d2' : '#d32f2f';
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        bottom: show ? 90 : -120,
+        width: '100vw',
+        background: bannerBg,
+        color: textColor,
+        minHeight: 64,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 800,
+        fontSize: '1.1rem',
+        borderTop: `3.5px solid ${bannerBorder}`,
+        borderRadius: '22px 22px 0 0',
+        boxShadow: '0 -2px 12px #23a9fa11',
+        zIndex: 200,
+        opacity: show ? 1 : 0,
+        transition: 'bottom 0.38s cubic-bezier(.4,2,.6,1), opacity 0.25s',
+        textAlign: 'center',
+        padding: '0.7rem 0',
+      }}
+    >
+      <div style={{ fontSize: '2rem', marginRight: 16, marginLeft: 8, color: iconColor, display: 'flex', alignItems: 'center' }}>
+        {correct ? (
+          <span role="img" aria-label="check">✔️</span>
+        ) : (
+          <span role="img" aria-label="x">❌</span>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
+        {correct ? (
+          <span style={{ fontWeight: 900, fontSize: '1.1rem', color: textColor }}>Correct!</span>
+        ) : (
+          <span style={{ fontWeight: 900, fontSize: '1.1rem', color: textColor }}>
+            Correct solution:
+            <span style={{ fontWeight: 900, marginLeft: 8, color: '#222' }}>
+              {String.fromCharCode(65 + (correctAnswer ?? 0))}. {choices[correctAnswer ?? 0]}
+            </span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QuestionCard({
+  question,
+  choices,
+  selected,
+  onSelect,
+  showFeedback,
+  correct,
+  correctAnswer,
+  onCheck,
+  canCheck,
+  canContinue,
+  checking,
+}: {
   question: string;
   choices: string[];
   selected: number | null;
   onSelect: (idx: number) => void;
+  showFeedback: boolean;
+  correct: boolean;
+  correctAnswer: number;
+  onCheck: () => void;
+  canCheck: boolean;
+  canContinue: boolean;
+  checking: boolean;
 }) {
+  const [choicesMaxHeight, setChoicesMaxHeight] = useState<number | undefined>(undefined);
+  const questionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function updateMaxHeight() {
+      const headerHeight = 100;
+      const buttonHeight = 110;
+      const questionHeight = questionRef.current?.offsetHeight || 0;
+      const padding = 64;
+      const available = window.innerHeight - headerHeight - questionHeight - buttonHeight - padding;
+      setChoicesMaxHeight(available > 0 ? available : 120);
+    }
+    updateMaxHeight();
+    window.addEventListener('resize', updateMaxHeight);
+    return () => window.removeEventListener('resize', updateMaxHeight);
+  }, [question]);
   return (
     <div style={{
       background: '#fff',
@@ -154,9 +300,38 @@ function QuestionCard({ question, choices, selected, onSelect }: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      position: 'relative',
+      overflow: 'visible',
+      marginTop: showFeedback ? 0 : 0,
+      transition: 'margin-bottom 0.3s cubic-bezier(.4,2,.6,1), margin-top 0.3s cubic-bezier(.4,2,.6,1)',
     }}>
-      <div style={{ fontWeight: 800, fontSize: '1.35rem', color: '#222', marginBottom: 24, textAlign: 'center' }}>{question}</div>
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div
+        ref={questionRef}
+        style={{
+          maxHeight: 140,
+          overflowY: 'auto',
+          marginBottom: 24,
+          fontWeight: 800,
+          fontSize: '1.2rem',
+          color: '#222',
+          textAlign: 'center',
+          marginTop: 24,
+          padding: '0 8px',
+          wordBreak: 'break-word',
+          hyphens: 'auto',
+        }}
+      >
+        {question}
+      </div>
+      <div style={{
+        width: '100%',
+        maxHeight: choicesMaxHeight,
+        overflowY: choicesMaxHeight && choices.length > 3 ? 'auto' : 'visible',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        marginBottom: 32
+      }}>
         {choices.map((choice, idx) => (
           <button
             key={idx}
@@ -173,12 +348,14 @@ function QuestionCard({ question, choices, selected, onSelect }: {
               display: 'flex',
               alignItems: 'center',
               gap: 16,
-              cursor: selected === null ? 'pointer' : 'default',
+              cursor: showFeedback ? 'default' : 'pointer',
               transition: 'all 0.18s cubic-bezier(.4,2,.6,1)',
               outline: 'none',
+              opacity: showFeedback && idx !== correctAnswer && !correct ? 0.6 : 1,
+              transform: checking && selected === idx ? 'scale(0.96)' : 'scale(1)',
             }}
-            onClick={() => selected === null && onSelect(idx)}
-            disabled={selected !== null}
+            onClick={() => !showFeedback && onSelect(idx)}
+            disabled={showFeedback}
           >
             <span style={{
               width: 32,
@@ -199,6 +376,48 @@ function QuestionCard({ question, choices, selected, onSelect }: {
           </button>
         ))}
       </div>
+      {/* Check/Continue button above the feedback banner, further down */}
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: 8, marginBottom: 24, position: 'fixed', left: 0, bottom: 16, zIndex: 201 }}>
+        <button
+          style={{
+            width: '90%',
+            maxWidth: 420,
+            background: canContinue
+              ? (correct ? 'linear-gradient(90deg, #23a9fa 60%, #1976d2 100%)' : 'linear-gradient(90deg, #ff5a5a 60%, #ff8a8a 100%)')
+              : canCheck
+              ? 'linear-gradient(90deg, #23a9fa 60%, #81ecec 100%)'
+              : '#e3f2fd',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 16,
+            fontWeight: 800,
+            fontSize: '1.1rem',
+            padding: '1.1rem 0',
+            boxShadow: canContinue
+              ? (correct ? '0 2px 12px #23a9fa22' : '0 2px 12px #ff5a5a22')
+              : canCheck
+              ? '0 2px 12px #23a9fa22'
+              : '0 2px 8px #b2bec311',
+            cursor: canCheck || canContinue ? 'pointer' : 'not-allowed',
+            opacity: canCheck || canContinue ? 1 : 0.7,
+            transition: 'all 0.18s cubic-bezier(.4,2,.6,1)',
+            outline: 'none',
+            transform: checking ? 'scale(0.96)' : 'scale(1)',
+            letterSpacing: 2,
+          }}
+          onClick={canCheck ? onCheck : canContinue ? onCheck : undefined}
+          disabled={!(canCheck || canContinue)}
+        >
+          {canContinue ? 'CONTINUE' : 'CHECK'}
+        </button>
+      </div>
+      {/* Feedback banner at the bottom, behind the button, moved up */}
+      <FeedbackBanner
+        correct={correct}
+        correctAnswer={correctAnswer}
+        show={showFeedback}
+        choices={choices}
+      />
     </div>
   );
 }
@@ -208,16 +427,28 @@ function MathLevel1() {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
   const levelQuestions = questions.filter(q => q.topic === 'algebra').slice(0, 10);
+  const navigate = useNavigate();
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
-  if (loading) return <LoadingScreen message="Loading Level 1..." />;
+  useEffect(() => {
+    // On finish, if score >= 6, mark as completed
+    if (current === levelQuestions.length && score >= 6) {
+      localStorage.setItem('math-level-1', 'completed');
+    }
+  }, [current, score, levelQuestions.length]);
   const q = levelQuestions[current];
+  const canCheck = selected !== null && !showFeedback;
+  const canContinue = showFeedback;
+  if (loading) return <LoadingScreen message="Loading Level 1..." />;
   return (
     <div className="screen-transition" key="mathLevel1">
-      <div className="app" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', paddingTop: 32 }}>
+      <div className="app" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', padding: 0, paddingBottom: showFeedback ? 180 : 70 }}>
         <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
         {current < levelQuestions.length ? (
           <QuestionCard
@@ -225,20 +456,37 @@ function MathLevel1() {
             choices={q.choices}
             selected={selected}
             onSelect={idx => {
-              setSelected(idx);
-              setTimeout(() => {
-                if (idx === q.answer) setScore(s => s + 1);
-                setSelected(null);
-                setCurrent(c => c + 1);
-              }, 900);
+              if (!showFeedback) setSelected(idx);
             }}
+            showFeedback={showFeedback}
+            correct={wasCorrect}
+            correctAnswer={q.answer}
+            onCheck={() => {
+              if (canCheck) {
+                setChecking(true);
+                setTimeout(() => {
+                  setShowFeedback(true);
+                  setWasCorrect(selected === q.answer);
+                  setChecking(false);
+                  if (selected === q.answer) setScore(s => s + 1);
+                }, 200);
+              } else if (canContinue) {
+                setShowFeedback(false);
+                setSelected(null);
+                setWasCorrect(false);
+                setCurrent(c => c + 1);
+              }
+            }}
+            canCheck={canCheck}
+            canContinue={canContinue}
+            checking={checking}
           />
         ) : (
           <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
             You scored {score} / {levelQuestions.length}!
           </div>
         )}
-        <BackToLevelsButton />
+        {/* Removed BackToLevelsButton from here */}
       </div>
     </div>
   );
@@ -739,15 +987,24 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
     // Responsive sizing
     const isMobile = window.innerWidth < 700;
     const circleSize = isMobile ? 70 : 100;
-    // Example: 6 levels, only the first is completed
-    const levelCompletion = [true, false, false, false, false, false];
+    // Read completion from localStorage for all levels
+    const level1Completed = typeof window !== 'undefined' && localStorage.getItem('math-level-1') === 'completed';
+    const level2Completed = typeof window !== 'undefined' && localStorage.getItem('math-level-2') === 'completed';
+    const level3Completed = typeof window !== 'undefined' && localStorage.getItem('math-level-3') === 'completed';
+    const level4Completed = typeof window !== 'undefined' && localStorage.getItem('math-level-4') === 'completed';
+    const level5Completed = typeof window !== 'undefined' && localStorage.getItem('math-level-5') === 'completed';
+    const level6Completed = typeof window !== 'undefined' && localStorage.getItem('math-level-6') === 'completed';
+    const levelCompletion = [level1Completed, level2Completed, level3Completed, level4Completed, level5Completed, level6Completed];
     const levels = [1, 2, 3, 4, 5, 6];
     // Path positions: smooth, centered zig-zag
-    const pathWidth = isMobile ? 340 : 540;
-    const pathHeight = isMobile ? 520 : 720;
-    const center = pathWidth / 2 - circleSize / 2;
-    const offset = isMobile ? 60 : 140;
-    const step = isMobile ? 80 : 120;
+    const pathWidth = isMobile ? 370 : 600;
+    const pathHeight = isMobile ? 580 : 820;
+    // For calculations, parse as numbers (assume 100vw = window.innerWidth)
+    const pathWidthNum = isMobile ? 370 : 600;
+    const pathHeightNum = isMobile ? 580 : 820;
+    const center = pathWidthNum / 2 - circleSize / 2;
+    const offset = isMobile ? 70 : 140;
+    const step = isMobile ? 90 : 130;
     const positions = [
       { left: center, top: 0 },
       { left: center + offset, top: step },
@@ -772,7 +1029,7 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
             justifyContent: 'flex-start',
             position: 'relative',
             background: '#fff',
-            paddingTop: isMobile ? 24 : 32, // extra top padding on both mobile and desktop
+            paddingTop: isMobile ? 24 : 32,
           }}
         >
           {/* Floating back button: circle in bottom left (both desktop and mobile) */}
@@ -879,15 +1136,18 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
             </div>
           </div>
           {/* Path and level buttons */}
-          <div style={{
-            position: 'relative',
-            width: pathWidth,
-            height: pathHeight,
-            margin: '0 auto',
-            marginBottom: isMobile ? 18 : 32,
-            display: 'flex',
-            justifyContent: 'center',
-          }}>
+          <div
+            style={{
+              position: 'relative',
+              width: pathWidth,
+              height: pathHeight,
+              margin: '0 auto',
+              display: 'flex',
+              justifyContent: 'center',
+              marginTop: `calc((100vh - 140px - ${pathHeight}px) / 2)`,
+              marginBottom: `calc((100vh - 140px - ${pathHeight}px) / 2)`,
+            }}
+          >
             {/* Path lines/dots (drawn behind the buttons) */}
             <svg
               width={pathWidth}
@@ -915,12 +1175,14 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
             </svg>
             {/* Level circles */}
             {levels.map((level, idx) => {
+              // Unlock logic: level 1 always unlocked, level N unlocked if previous completed
               const completed = levelCompletion[idx];
+              const unlocked = idx === 0 || levelCompletion[idx - 1];
               const pos = positions[idx];
               // Colors for blue and gray states
-              const topColor = completed ? '#23a9fa' : '#ededed';
+              const topColor = completed ? '#23a9fa' : unlocked ? '#23a9fa' : '#ededed';
               const shadowColor = completed ? '#1976d2' : '#bdbdbd';
-              const textColor = completed ? '#fff' : '#b0b0b0';
+              const textColor = completed ? '#fff' : unlocked ? '#fff' : '#b0b0b0';
               // Animation: scale down on press
               const isPressed = pressedIdx === idx;
               return (
@@ -939,7 +1201,7 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: completed ? 'pointer' : 'not-allowed',
+                    cursor: unlocked ? 'pointer' : 'not-allowed',
                     outline: 'none',
                     zIndex: 2,
                     userSelect: 'none',
@@ -948,22 +1210,30 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
                     transition: 'transform 0.18s cubic-bezier(.4,2,.6,1)',
                     transform: isPressed ? 'scale(0.88)' : 'scale(1)',
                   }}
-                  onMouseDown={() => completed && setPressedIdx(idx)}
-                  onMouseUp={() => completed && setPressedIdx(null)}
-                  onMouseLeave={() => completed && setPressedIdx(null)}
-                  onTouchStart={() => completed && setPressedIdx(idx)}
-                  onTouchEnd={() => completed && setPressedIdx(null)}
+                  onMouseDown={() => unlocked && setPressedIdx(idx)}
+                  onMouseUp={() => unlocked && setPressedIdx(null)}
+                  onMouseLeave={() => unlocked && setPressedIdx(null)}
+                  onTouchStart={() => unlocked && setPressedIdx(idx)}
+                  onTouchEnd={() => unlocked && setPressedIdx(null)}
                   onClick={() => {
-                    if (completed) {
+                    if (unlocked) {
                       if (level === 1) {
                         navigate('/math/level/1');
-                      } else {
-                        setSelectedLevel('level' + level);
+                      } else if (level === 2 && level1Completed) {
+                        navigate('/math/level/2');
+                      } else if (level === 3 && level2Completed) {
+                        navigate('/math/level/3');
+                      } else if (level === 4 && level3Completed) {
+                        navigate('/math/level/4');
+                      } else if (level === 5 && level4Completed) {
+                        navigate('/math/level/5');
+                      } else if (level === 6 && level5Completed) {
+                        navigate('/math/level/6');
                       }
                       setPressedIdx(null);
                     }
                   }}
-                  disabled={!completed}
+                  disabled={!unlocked}
                 >
                   <svg width={circleSize} height={circleSize + 18} viewBox={`0 0 ${circleSize} ${circleSize + 18}`} style={{ display: 'block' }}>
                     {/* Shadow ellipse below, offset down */}
@@ -982,39 +1252,35 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
                       r={circleSize / 2}
                       fill={topColor}
                     />
-                    {/* Centered number or star with shadow */}
+                    {/* Centered icon/number */}
                     {completed ? (
-                      <>
-                        {/* Number shadow */}
-                        <text
-                          x="50%"
-                          y={circleSize * 0.62}
-                          textAnchor="middle"
-                          fontSize={isMobile ? circleSize * 0.48 : circleSize * 0.44}
-                          fontWeight="bold"
-                          fill="#1976d2"
-                          opacity="0.25"
-                          style={{ filter: 'blur(1.5px)' }}
-                          dominantBaseline="middle"
-                        >
-                          {level}
-                        </text>
-                        {/* Number */}
-                        <text
-                          x="50%"
-                          y={circleSize * 0.58}
-                          textAnchor="middle"
-                          fontSize={isMobile ? circleSize * 0.48 : circleSize * 0.44}
-                          fontWeight="bold"
-                          fill={textColor}
-                          dominantBaseline="middle"
-                        >
-                          {level}
-                        </text>
-                      </>
+                      // Classic white checkmark for completed
+                      <g>
+                        <path
+                          d={`M ${circleSize * 0.32} ${circleSize * 0.56} L ${circleSize * 0.46} ${circleSize * 0.72} L ${circleSize * 0.70} ${circleSize * 0.40}`}
+                          stroke="#fff"
+                          strokeWidth={circleSize * 0.13}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                      </g>
+                    ) : unlocked ? (
+                      // Number for unlocked level
+                      <text
+                        x="50%"
+                        y={circleSize * 0.58}
+                        textAnchor="middle"
+                        fontSize={isMobile ? circleSize * 0.48 : circleSize * 0.44}
+                        fontWeight="bold"
+                        fill={textColor}
+                        dominantBaseline="middle"
+                      >
+                        {level}
+                      </text>
                     ) : (
-                      <>
-                        {/* Star shadow ellipse */}
+                      // Star for locked
+                      <g>
                         <ellipse
                           cx={circleSize / 2}
                           cy={circleSize * 0.62}
@@ -1023,7 +1289,6 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
                           fill="#d6d6d6"
                           opacity="0.7"
                         />
-                        {/* Star */}
                         <path
                           d={`M${circleSize / 2} ${circleSize * 0.32}
                             l${circleSize * 0.07} ${circleSize * 0.14}
@@ -1038,7 +1303,7 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
                             z`}
                           fill={textColor}
                         />
-                      </>
+                      </g>
                     )}
                   </svg>
                 </button>
@@ -1127,6 +1392,348 @@ function MainApp({ initialGameState }: { initialGameState?: string }) {
   );
 }
 
+function MathLevel2() {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  // Use next 10 algebra questions for level 2 (skip first 10)
+  const levelQuestions = questions.filter(q => q.topic === 'algebra').slice(10, 20);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+  const q = levelQuestions[current];
+  const canCheck = selected !== null && !showFeedback;
+  const canContinue = showFeedback;
+  if (loading) return <LoadingScreen message="Loading Level 2..." />;
+  return (
+    <div className="screen-transition" key="mathLevel2">
+      <div className="app" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', padding: 0, paddingBottom: showFeedback ? 180 : 70 }}>
+        <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
+        {current < levelQuestions.length ? (
+          <QuestionCard
+            question={q.question}
+            choices={q.choices}
+            selected={selected}
+            onSelect={idx => {
+              if (!showFeedback) setSelected(idx);
+            }}
+            showFeedback={showFeedback}
+            correct={wasCorrect}
+            correctAnswer={q.answer}
+            onCheck={() => {
+              if (canCheck) {
+                setChecking(true);
+                setTimeout(() => {
+                  setShowFeedback(true);
+                  setWasCorrect(selected === q.answer);
+                  setChecking(false);
+                  if (selected === q.answer) setScore(s => s + 1);
+                }, 200);
+              } else if (canContinue) {
+                setShowFeedback(false);
+                setSelected(null);
+                setWasCorrect(false);
+                setCurrent(c => c + 1);
+              }
+            }}
+            canCheck={canCheck}
+            canContinue={canContinue}
+            checking={checking}
+          />
+        ) : (
+          <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
+            You scored {score} / {levelQuestions.length}!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MathLevel3() {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  // Use 10 medium algebra questions
+  const levelQuestions = questions.filter(q => q.topic === 'algebra' && q.difficulty === 'medium').slice(0, 10);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (current === levelQuestions.length && score >= 6) {
+      localStorage.setItem('math-level-3', 'completed');
+    }
+  }, [current, score, levelQuestions.length]);
+  const q = levelQuestions[current];
+  const canCheck = selected !== null && !showFeedback;
+  const canContinue = showFeedback;
+  if (loading) return <LoadingScreen message="Loading Level 3..." />;
+  return (
+    <div className="screen-transition" key="mathLevel3">
+      <div className="app" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', padding: 0, paddingBottom: showFeedback ? 180 : 70 }}>
+        <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
+        {current < levelQuestions.length ? (
+          <QuestionCard
+            question={q.question}
+            choices={q.choices}
+            selected={selected}
+            onSelect={idx => {
+              if (!showFeedback) setSelected(idx);
+            }}
+            showFeedback={showFeedback}
+            correct={wasCorrect}
+            correctAnswer={q.answer}
+            onCheck={() => {
+              if (canCheck) {
+                setChecking(true);
+                setTimeout(() => {
+                  setShowFeedback(true);
+                  setWasCorrect(selected === q.answer);
+                  setChecking(false);
+                  if (selected === q.answer) setScore(s => s + 1);
+                }, 200);
+              } else if (canContinue) {
+                setShowFeedback(false);
+                setSelected(null);
+                setWasCorrect(false);
+                setCurrent(c => c + 1);
+              }
+            }}
+            canCheck={canCheck}
+            canContinue={canContinue}
+            checking={checking}
+          />
+        ) : (
+          <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
+            You scored {score} / {levelQuestions.length}!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MathLevel4() {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  // Use 5 medium and 5 hard algebra questions
+  const mediumQs = questions.filter(q => q.topic === 'algebra' && q.difficulty === 'medium').slice(10, 15);
+  const hardQs = questions.filter(q => q.topic === 'algebra' && q.difficulty === 'hard').slice(0, 5);
+  const levelQuestions = [...mediumQs, ...hardQs];
+  const navigate = useNavigate();
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (current === levelQuestions.length && score >= 6) {
+      localStorage.setItem('math-level-4', 'completed');
+    }
+  }, [current, score, levelQuestions.length]);
+  const q = levelQuestions[current];
+  const canCheck = selected !== null && !showFeedback;
+  const canContinue = showFeedback;
+  if (loading) return <LoadingScreen message="Loading Level 4..." />;
+  return (
+    <div className="screen-transition" key="mathLevel4">
+      <div className="app" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', padding: 0, paddingBottom: showFeedback ? 180 : 70 }}>
+        <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
+        {current < levelQuestions.length ? (
+          <QuestionCard
+            question={q.question}
+            choices={q.choices}
+            selected={selected}
+            onSelect={idx => {
+              if (!showFeedback) setSelected(idx);
+            }}
+            showFeedback={showFeedback}
+            correct={wasCorrect}
+            correctAnswer={q.answer}
+            onCheck={() => {
+              if (canCheck) {
+                setChecking(true);
+                setTimeout(() => {
+                  setShowFeedback(true);
+                  setWasCorrect(selected === q.answer);
+                  setChecking(false);
+                  if (selected === q.answer) setScore(s => s + 1);
+                }, 200);
+              } else if (canContinue) {
+                setShowFeedback(false);
+                setSelected(null);
+                setWasCorrect(false);
+                setCurrent(c => c + 1);
+              }
+            }}
+            canCheck={canCheck}
+            canContinue={canContinue}
+            checking={checking}
+          />
+        ) : (
+          <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
+            You scored {score} / {levelQuestions.length}!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MathLevel5() {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  // Use 10 hard algebra questions
+  const levelQuestions = questions.filter(q => q.topic === 'algebra' && q.difficulty === 'hard').slice(5, 15);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (current === levelQuestions.length && score >= 6) {
+      localStorage.setItem('math-level-5', 'completed');
+    }
+  }, [current, score, levelQuestions.length]);
+  const q = levelQuestions[current];
+  const canCheck = selected !== null && !showFeedback;
+  const canContinue = showFeedback;
+  if (loading) return <LoadingScreen message="Loading Level 5..." />;
+  return (
+    <div className="screen-transition" key="mathLevel5">
+      <div className="app" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', padding: 0, paddingBottom: showFeedback ? 180 : 70 }}>
+        <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
+        {current < levelQuestions.length ? (
+          <QuestionCard
+            question={q.question}
+            choices={q.choices}
+            selected={selected}
+            onSelect={idx => {
+              if (!showFeedback) setSelected(idx);
+            }}
+            showFeedback={showFeedback}
+            correct={wasCorrect}
+            correctAnswer={q.answer}
+            onCheck={() => {
+              if (canCheck) {
+                setChecking(true);
+                setTimeout(() => {
+                  setShowFeedback(true);
+                  setWasCorrect(selected === q.answer);
+                  setChecking(false);
+                  if (selected === q.answer) setScore(s => s + 1);
+                }, 200);
+              } else if (canContinue) {
+                setShowFeedback(false);
+                setSelected(null);
+                setWasCorrect(false);
+                setCurrent(c => c + 1);
+              }
+            }}
+            canCheck={canCheck}
+            canContinue={canContinue}
+            checking={checking}
+          />
+        ) : (
+          <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
+            You scored {score} / {levelQuestions.length}!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MathLevel6() {
+  const [loading, setLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  // Use 10 hardest algebra questions (last 10 hard)
+  const levelQuestions = questions.filter(q => q.topic === 'algebra' && q.difficulty === 'hard').slice(15, 25);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (current === levelQuestions.length && score >= 6) {
+      localStorage.setItem('math-level-6', 'completed');
+    }
+  }, [current, score, levelQuestions.length]);
+  const q = levelQuestions[current];
+  const canCheck = selected !== null && !showFeedback;
+  const canContinue = showFeedback;
+  if (loading) return <LoadingScreen message="Loading Level 6..." />;
+  return (
+    <div className="screen-transition" key="mathLevel6">
+      <div className="app" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', width: '100vw', padding: 0, paddingBottom: showFeedback ? 180 : 70 }}>
+        <ProgressBar current={Math.min(current + 1, levelQuestions.length)} total={levelQuestions.length} />
+        {current < levelQuestions.length ? (
+          <QuestionCard
+            question={q.question}
+            choices={q.choices}
+            selected={selected}
+            onSelect={idx => {
+              if (!showFeedback) setSelected(idx);
+            }}
+            showFeedback={showFeedback}
+            correct={wasCorrect}
+            correctAnswer={q.answer}
+            onCheck={() => {
+              if (canCheck) {
+                setChecking(true);
+                setTimeout(() => {
+                  setShowFeedback(true);
+                  setWasCorrect(selected === q.answer);
+                  setChecking(false);
+                  if (selected === q.answer) setScore(s => s + 1);
+                }, 200);
+              } else if (canContinue) {
+                setShowFeedback(false);
+                setSelected(null);
+                setWasCorrect(false);
+                setCurrent(c => c + 1);
+              }
+            }}
+            canCheck={canCheck}
+            canContinue={canContinue}
+            checking={checking}
+          />
+        ) : (
+          <div style={{ fontSize: '1.5rem', color: '#23a9fa', fontWeight: 800, marginTop: 32 }}>
+            You scored {score} / {levelQuestions.length}!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -1134,6 +1741,11 @@ export default function App() {
         <Route path="/" element={<MainApp />} />
         <Route path="/math-levels" element={<MainApp initialGameState="mathLevels" />} />
         <Route path="/math/level/1" element={<MathLevel1 />} />
+        <Route path="/math/level/2" element={<MathLevel2 />} />
+        <Route path="/math/level/3" element={<MathLevel3 />} />
+        <Route path="/math/level/4" element={<MathLevel4 />} />
+        <Route path="/math/level/5" element={<MathLevel5 />} />
+        <Route path="/math/level/6" element={<MathLevel6 />} />
         {/* Add more routes for other levels as needed */}
       </Routes>
     </BrowserRouter>
